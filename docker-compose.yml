@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  freebird-mcp:
+    build: .
+    container_name: freebird-mcp
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # For future HTTP transport
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Mount for stdio transport (optional)
+      - /tmp:/tmp
+    stdin_open: true
+    tty: true
+    command: ["node", "dist/index.js", "--verbose"]
+    
+  # Optional: nginx proxy for HTTP transport (future enhancement)
+  nginx:
+    image: nginx:alpine
+    container_name: freebird-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - freebird-mcp
+    profiles:
+      - "http-transport"  # Only run when http profile is specified

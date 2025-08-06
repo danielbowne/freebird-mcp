@@ -5,14 +5,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import {
-  search,
-  searchNews,
-  searchImages,
-  searchVideos,
-  SafeSearchType,
-  SearchTimeType,
-} from "duck-duck-scrape";
+import { DDGS } from "@phukon/duckduckgo-search";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -21,6 +14,9 @@ const BANNER = `
 🕊️ Freebird MCP Server
 Free as a bird - No API keys required
 `;
+
+// Initialize DDGS instance
+const ddgs = new DDGS();
 
 // Parse CLI arguments
 const argv = await yargs(hideBin(process.argv))
@@ -60,20 +56,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "freebird_search",
         description:
-          '🕊️ Smart search that auto-detects the best search type. Just add "use freebird" to your prompt.',
+          '🕊️ Smart web search with DuckDuckGo. Just add "use freebird" to your prompt.',
         inputSchema: {
           type: "object",
           properties: {
             query: {
               type: "string",
               description: "What to search for",
-            },
-            searchType: {
-              type: "string",
-              enum: ["auto", "web", "news", "images", "videos"],
-              default: "auto",
-              description:
-                "Search type (auto-detects from context when set to auto)",
             },
             limit: {
               type: "number",
@@ -82,109 +71,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               minimum: 1,
               maximum: 20,
             },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "web_search",
-        description: "Search the web for general information",
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: {
+            region: {
               type: "string",
-              description: "Search query",
-            },
-            limit: {
-              type: "number",
-              description: "Maximum results (1-20)",
-              default: 5,
-              minimum: 1,
-              maximum: 20,
+              description: "Search region (e.g., 'us-en', 'uk-en')",
+              default: "us-en",
             },
             safeSearch: {
               type: "string",
               enum: ["strict", "moderate", "off"],
+              description: "Safe search filter",
               default: "moderate",
-            },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "news_search",
-        description: "Search for recent news and articles",
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "News search query",
-            },
-            timeRange: {
-              type: "string",
-              enum: ["d", "w", "m", "y"],
-              description: "Time range: d=day, w=week, m=month, y=year",
-              default: "w",
-            },
-            limit: {
-              type: "number",
-              description: "Maximum results",
-              default: 5,
-            },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "image_search",
-        description: "Search for images",
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "Image search query",
-            },
-            limit: {
-              type: "number",
-              description: "Maximum results",
-              default: 5,
-            },
-            size: {
-              type: "string",
-              enum: ["Small", "Medium", "Large", "Wallpaper"],
-              description: "Image size filter",
-            },
-            type: {
-              type: "string",
-              enum: ["photo", "clipart", "gif", "transparent"],
-              description: "Image type filter",
-            },
-          },
-          required: ["query"],
-        },
-      },
-      {
-        name: "video_search",
-        description: "Search for videos",
-        inputSchema: {
-          type: "object",
-          properties: {
-            query: {
-              type: "string",
-              description: "Video search query",
-            },
-            limit: {
-              type: "number",
-              description: "Maximum results",
-              default: 5,
-            },
-            duration: {
-              type: "string",
-              enum: ["short", "medium", "long"],
-              description: "Video duration filter",
             },
           },
           required: ["query"],
@@ -194,79 +90,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
-// Smart search type detection
-function detectSearchType(query: string): string {
-  const lowerQuery = query.toLowerCase();
-
-  // Check for explicit type indicators
-  if (lowerQuery.match(/\b(news|headline|latest|breaking|recent)\b/)) {
-    return "news";
-  }
-  if (lowerQuery.match(/\b(image|photo|picture|pic|img|visual)\b/)) {
-    return "images";
-  }
-  if (lowerQuery.match(/\b(video|watch|youtube|clip|tutorial video)\b/)) {
-    return "videos";
-  }
-
-  // Default to web search
-  return "web";
-}
-
-// Format results for better readability
-function formatResults(results: any[], type: string): string {
-  if (!results || results.length === 0) {
-    return "No results found. Try different keywords or broaden your search.";
-  }
-
-  switch (type) {
-    case "news":
-      return results
-        .map(
-          (r, i) =>
-            `${i + 1}. **${r.title}**\n   Source: ${
-              r.source || "Unknown"
-            }\n   Date: ${r.date || "N/A"}\n   URL: ${r.url}\n   ${
-              r.body ? `Summary: ${r.body.substring(0, 150)}...` : ""
-            }`
-        )
-        .join("\n\n");
-
-    case "images":
-      return results
-        .map(
-          (r, i) =>
-            `${i + 1}. **${r.title}**\n   Image: ${r.image}\n   Thumbnail: ${
-              r.thumbnail
-            }\n   Source: ${r.url}\n   Size: ${r.width}x${r.height}`
-        )
-        .join("\n\n");
-
-    case "videos":
-      return results
-        .map(
-          (r, i) =>
-            `${i + 1}. **${r.title}**\n   URL: ${r.content}\n   Duration: ${
-              r.duration || "N/A"
-            }\n   Publisher: ${r.publisher || "Unknown"}\n   ${
-              r.description
-                ? `Description: ${r.description.substring(0, 150)}...`
-                : ""
-            }`
-        )
-        .join("\n\n");
-
-    default: // web
-      return results
-        .map(
-          (r, i) =>
-            `${i + 1}. **${r.title}**\n   URL: ${r.url}\n   ${
-              r.description || ""
-            }`
-        )
-        .join("\n\n");
-  }
-}
 
 // Tool handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -285,166 +108,44 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   try {
-    // Smart search with auto-detection
+    // Freebird search
     if (name === "freebird_search") {
-      const searchType =
-        typedArgs.searchType === "auto"
-          ? detectSearchType(typedArgs.query)
-          : typedArgs.searchType;
-
       if (argv.verbose) {
-        console.error(`🕊️ Auto-detected search type: ${searchType}`);
+        console.error(`🕊️ Freebird: Searching for "${typedArgs.query}"`);
       }
 
-      let results;
-      switch (searchType) {
-        case "news":
-          const newsData = await searchNews(typedArgs.query, {
-            safeSearch: SafeSearchType.MODERATE,
-            time: SearchTimeType.WEEK,
-          });
-          results = formatResults(
-            newsData.results.slice(0, typedArgs.limit || 5),
-            "news"
-          );
-          break;
+      const searchOptions: any = {
+        keywords: typedArgs.query,
+        maxResults: typedArgs.limit || 5,
+        region: typedArgs.region || "us-en",
+        safesearch: typedArgs.safeSearch || "moderate",
+      };
 
-        case "images":
-          const imageData = await searchImages(typedArgs.query, {
-            safeSearch: SafeSearchType.MODERATE,
-          });
-          results = formatResults(
-            imageData.results.slice(0, typedArgs.limit || 5),
-            "images"
-          );
-          break;
-
-        case "videos":
-          const videoData = await searchVideos(typedArgs.query, {
-            safeSearch: SafeSearchType.MODERATE,
-          });
-          results = formatResults(
-            videoData.results.slice(0, typedArgs.limit || 5),
-            "videos"
-          );
-          break;
-
-        default:
-          const webData = await search(typedArgs.query, {
-            safeSearch: SafeSearchType.MODERATE,
-          });
-          results = formatResults(
-            webData.results.slice(0, typedArgs.limit || 5),
-            "web"
-          );
+      const results = await ddgs.text(searchOptions);
+      
+      if (!results || results.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "No results found. Try different keywords or broaden your search.",
+            },
+          ],
+        };
       }
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: `🕊️ Freebird Search Results (${searchType}):\n\n${results}`,
-          },
-        ],
-      };
-    }
-
-    // Regular web search
-    if (name === "web_search") {
-      const safeSearchMap: Record<string, SafeSearchType> = {
-        strict: SafeSearchType.STRICT,
-        moderate: SafeSearchType.MODERATE,
-        off: SafeSearchType.OFF,
-      };
-
-      const results = await search(typedArgs.query, {
-        safeSearch: safeSearchMap[typedArgs.safeSearch || "moderate"],
-      });
-
-      const formatted = formatResults(
-        results.results.slice(0, typedArgs.limit || 5),
-        "web"
-      );
+      const formatted = results
+        .map(
+          (r: any, i: number) =>
+            `${i + 1}. **${r.title}**\n   URL: ${r.href}\n   ${r.body || ""}`
+        )
+        .join("\n\n");
 
       return {
         content: [
           {
             type: "text",
-            text: formatted,
-          },
-        ],
-      };
-    }
-
-    // News search
-    if (name === "news_search") {
-      const timeRangeMap: Record<string, SearchTimeType> = {
-        d: SearchTimeType.DAY,
-        w: SearchTimeType.WEEK,
-        m: SearchTimeType.MONTH,
-        y: SearchTimeType.YEAR,
-      };
-
-      const results = await searchNews(typedArgs.query, {
-        safeSearch: SafeSearchType.MODERATE,
-        time: timeRangeMap[typedArgs.timeRange] || SearchTimeType.WEEK,
-      });
-
-      const formatted = formatResults(
-        results.results.slice(0, typedArgs.limit || 5),
-        "news"
-      );
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: formatted,
-          },
-        ],
-      };
-    }
-
-    // Image search
-    if (name === "image_search") {
-      const results = await searchImages(typedArgs.query, {
-        safeSearch: SafeSearchType.MODERATE,
-        size: typedArgs.size,
-        type: typedArgs.type,
-      });
-
-      const formatted = formatResults(
-        results.results.slice(0, typedArgs.limit || 5),
-        "images"
-      );
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: formatted,
-          },
-        ],
-      };
-    }
-
-    // Video search
-    if (name === "video_search") {
-      const results = await searchVideos(typedArgs.query, {
-        safeSearch: SafeSearchType.MODERATE,
-        duration: typedArgs.duration,
-      });
-
-      const formatted = formatResults(
-        results.results.slice(0, typedArgs.limit || 5),
-        "videos"
-      );
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: formatted,
+            text: `🕊️ Freebird Search Results:\n\n${formatted}`,
           },
         ],
       };

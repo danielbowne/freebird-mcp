@@ -1,6 +1,6 @@
 {
     "name": "@dannyboy2042/freebird-mcp",
-    "version": "1.0.0-beta.1",
+    "version": "1.2.1",
     "description": "🕊️ Free web search MCP server - soar through the web without API keys. Just add 'use freebird' to any prompt.",
     "main": "dist/index.js",
     "bin": {
@@ -19,7 +19,7 @@
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^0.6.1",
-        "duck-duck-scrape": "^2.2.5",
+        "@phukon/duckduckgo-search": "^1.1.0",
         "yargs": "^17.7.2"
     },
     "devDependencies": {
