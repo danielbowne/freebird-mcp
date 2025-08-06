@@ -11,6 +11,52 @@ import * as cheerio from "cheerio";
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const turndownPluginGfm = require('turndown-plugin-gfm');
+/**
+ * Basic URL validation to prevent SSRF attacks
+ * Uses simple string checks instead of complex regex to avoid npm issues
+ */
+function validateUrl(url) {
+    try {
+        const parsedUrl = new URL(url);
+        // Only allow HTTP/HTTPS
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            throw new Error('Only HTTP and HTTPS URLs are allowed');
+        }
+        const hostname = parsedUrl.hostname.toLowerCase();
+        // Block common dangerous hostnames (simple string checks)
+        const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+        if (blockedHosts.includes(hostname)) {
+            throw new Error('Access to localhost is not allowed');
+        }
+        // Block private networks (simple prefix checks)
+        if (hostname.startsWith('10.') ||
+            hostname.startsWith('192.168.') ||
+            hostname.startsWith('169.254.')) {
+            throw new Error('Access to private networks is not allowed');
+        }
+        // Block 172.16-31.x.x range (simple check)
+        if (hostname.startsWith('172.')) {
+            const parts = hostname.split('.');
+            if (parts.length >= 2) {
+                const second = parseInt(parts[1]);
+                if (second >= 16 && second <= 31) {
+                    throw new Error('Access to private networks is not allowed');
+                }
+            }
+        }
+        // Block metadata services
+        if (hostname.includes('metadata')) {
+            throw new Error('Access to metadata services is not allowed');
+        }
+        return parsedUrl.toString();
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error('Invalid URL format');
+    }
+}
 // 🕊️ Freebird - Soar through the web without limits
 const BANNER = `
 🕊️ Freebird MCP Server
@@ -177,10 +223,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 console.error(`🦅 Freebird: Fetching content from "${typedArgs.url}"`);
             }
             try {
-                // TODO: Re-add URL validation after fixing npm binary issue
-                // const validatedUrl = validateAndSanitizeUrl(typedArgs.url);
+                // Validate URL for security (prevent SSRF attacks)
+                const validatedUrl = validateUrl(typedArgs.url);
                 // Fetch the HTML content
-                const response = await fetch(typedArgs.url, {
+                const response = await fetch(validatedUrl, {
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (compatible; FreebirdMCP/1.0; +https://github.com/danielbowne/freebird-mcp)',
                         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
