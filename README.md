@@ -73,7 +73,7 @@ npm run build
 Once installed, simply add **"use freebird"** to any prompt:
 
 ```
-use freebird to search for Node.js tutorials
+use freebird to find the latest TypeScript 5.0 features and examples
 ```
 
 ### Available Tools
@@ -87,17 +87,23 @@ use freebird to search for Node.js tutorials
 ### Search Examples
 
 ```bash
-# Smart auto-detection
-use freebird to find the latest React documentation
+# API Documentation & References
+use freebird to find FastAPI async database connection examples
 
-# News search
-use freebird to search for recent AI news
+# Framework Comparisons
+use freebird to compare Next.js 14 vs Remix performance benchmarks  
 
-# Image search  
-use freebird to find high-resolution nature images
+# Library Integration
+use freebird to search for Prisma with PostgreSQL best practices
 
-# Video tutorials
-use freebird to search for Python tutorial videos
+# Debugging & Troubleshooting
+use freebird to find solutions for Docker container networking issues
+
+# Architecture Patterns
+use freebird to research microservices event-driven architecture patterns
+
+# Tool Configuration
+use freebird to find ESLint configuration for TypeScript monorepos
 ```
 
 ## 🐳 Docker Support
@@ -139,9 +145,9 @@ Smart search that auto-detects the best search type based on your query.
 **Example:**
 ```json
 {
-  "query": "latest JavaScript frameworks",
-  "limit": 10,
-  "region": "us-en",
+  "query": "Rust async web framework performance comparison 2024",
+  "limit": 8,
+  "region": "us-en", 
   "safeSearch": "moderate"
 }
 ```

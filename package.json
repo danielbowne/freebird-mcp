@@ -1,6 +1,6 @@
 {
     "name": "@dannyboy2042/freebird-mcp",
-    "version": "1.2.1",
+    "version": "1.2.3",
     "description": "🕊️ Free web search MCP server - soar through the web without API keys. Just add 'use freebird' to any prompt.",
     "main": "dist/index.js",
     "bin": {
