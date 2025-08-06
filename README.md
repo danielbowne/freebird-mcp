@@ -14,13 +14,23 @@ Free web search for AI assistants. No API keys. No limits. Just soar.
 
 ## 🚀 Quick Start
 
-### Option 1: Docker (Recommended)
+> **Note for Claude Code users**: You already have excellent web search built-in! Freebird is most useful for other MCP tools that need search capabilities, or when you want the specialized `freebird_fetch` content extraction feature.
 
+<details>
+<summary><b>Install in Claude Desktop</b></summary>
+
+**Docker (Recommended):**
 ```bash
-# Install via Docker
 claude mcp add freebird -- docker run -i --rm dannyboy2042/freebird-mcp
+```
 
-# Or add manually to Claude Desktop config:
+**NPM:**
+```bash  
+claude mcp add freebird -- npx -y @dannyboy2042/freebird-mcp
+```
+
+**Manual Configuration:**
+```json
 {
   "mcpServers": {
     "freebird": {
@@ -31,13 +41,78 @@ claude mcp add freebird -- docker run -i --rm dannyboy2042/freebird-mcp
 }
 ```
 
-### Option 2: NPM Package
+</details>
 
-```bash
-# Install via npm
-claude mcp add freebird -- npx -y @dannyboy2042/freebird-mcp
+<details>
+<summary><b>Install in Cursor</b></summary>
 
-# Or add manually to Claude Desktop config:
+Add to your Cursor MCP settings file (`~/.cursor-mcp/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "freebird": {
+      "command": "npx",
+      "args": ["-y", "@dannyboy2042/freebird-mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+**Docker version:**
+```json
+{
+  "mcpServers": {
+    "freebird": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "dannyboy2042/freebird-mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Install in Windsurf</b></summary>
+
+Configure in Windsurf MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "freebird-search": {
+      "command": "npx",
+      "args": ["@dannyboy2042/freebird-mcp"],
+      "disabled": false
+    }
+  }
+}
+```
+
+**For Docker:**
+```json
+{
+  "mcpServers": {
+    "freebird-search": {
+      "command": "docker", 
+      "args": ["run", "-i", "--rm", "dannyboy2042/freebird-mcp"],
+      "disabled": false
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Install in Continue</b></summary>
+
+Add to your Continue configuration (`~/.continue/config.json`):
+
+```json
 {
   "mcpServers": {
     "freebird": {
@@ -48,16 +123,45 @@ claude mcp add freebird -- npx -y @dannyboy2042/freebird-mcp
 }
 ```
 
-### Option 3: Local Development
+</details>
+
+<details>
+<summary><b>Install in Other MCP Clients</b></summary>
+
+**Generic MCP Configuration:**
+```json
+{
+  "servers": {
+    "freebird": {
+      "command": "npx",
+      "args": ["-y", "@dannyboy2042/freebird-mcp"],
+      "transport": "stdio"
+    }
+  }
+}
+```
+
+**Direct Command Line:**
+```bash
+npx @dannyboy2042/freebird-mcp
+```
+
+</details>
+
+<details>
+<summary><b>Local Development Setup</b></summary>
 
 ```bash
-# Clone and run locally
+# Clone and build locally
 git clone https://github.com/danielbowne/freebird-mcp.git
 cd freebird-mcp
 npm install
 npm run build
 
-# Add to Claude Desktop config:
+# Test the server
+node dist/index.js --help
+
+# Add to your MCP client config:
 {
   "mcpServers": {
     "freebird": {
@@ -67,6 +171,8 @@ npm run build
   }
 }
 ```
+
+</details>
 
 ## 💡 Usage
 
