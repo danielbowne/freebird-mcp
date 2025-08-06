@@ -22,7 +22,7 @@
         "release:beta": "npm version prerelease --preid=beta && git push && git push --tags"
     },
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^0.6.1",
+        "@modelcontextprotocol/sdk": "^1.17.1",
         "@phukon/duckduckgo-search": "^1.1.0",
         "@types/turndown": "^5.0.5",
         "cheerio": "^1.1.2",
