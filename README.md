@@ -1,4 +1,4 @@
-# 🕊️ Freebird MCP
+# 🦅 Freebird MCP 🦅
 
 > *"Cause I'm as free as a bird now, and this bird you cannot change"* 🎸
 
