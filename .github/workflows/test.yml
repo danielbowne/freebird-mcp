@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint
+        run: npm run lint --if-present
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Test build output
+        run: |
+          # Verify the built file exists and is executable
+          test -f dist/index.js
+          node dist/index.js --help
+      
+      - name: Test with MCP Inspector
+        run: |
+          # Test that the server responds to MCP commands
+          npx -y @modelcontextprotocol/inspector npx . << EOF
+          {"jsonrpc": "2.0", "method": "tools/list", "id": 1}
+          EOF
+        continue-on-error: true  # Don't fail if MCP inspector has issues
+      
+      - name: Check TypeScript
+        run: npx tsc --noEmit

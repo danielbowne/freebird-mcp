@@ -2,7 +2,7 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
-import { search, searchNews, searchImages, searchVideos, SafeSearchType, } from "duck-duck-scrape";
+import { search, searchNews, searchImages, searchVideos, SafeSearchType, SearchTimeType, } from "duck-duck-scrape";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 // 🕊️ Freebird - Soar through the web without limits
@@ -219,44 +219,50 @@ function formatResults(results, type) {
 // Tool handler
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
+    // Type guard to ensure args is defined and is an object
+    if (!args || typeof args !== 'object') {
+        throw new Error('Invalid arguments provided');
+    }
+    // Cast to any for safe access - MCP SDK types are not fully typed
+    const typedArgs = args;
     if (argv.verbose) {
         console.error(`🕊️ Freebird: Handling ${name} with args:`, args);
     }
     try {
         // Smart search with auto-detection
         if (name === "freebird_search") {
-            const searchType = args.searchType === "auto"
-                ? detectSearchType(args.query)
-                : args.searchType;
+            const searchType = typedArgs.searchType === "auto"
+                ? detectSearchType(typedArgs.query)
+                : typedArgs.searchType;
             if (argv.verbose) {
                 console.error(`🕊️ Auto-detected search type: ${searchType}`);
             }
             let results;
             switch (searchType) {
                 case "news":
-                    const newsData = await searchNews(args.query, {
+                    const newsData = await searchNews(typedArgs.query, {
                         safeSearch: SafeSearchType.MODERATE,
-                        time: "w",
+                        time: SearchTimeType.WEEK,
                     });
-                    results = formatResults(newsData.results.slice(0, args.limit || 5), "news");
+                    results = formatResults(newsData.results.slice(0, typedArgs.limit || 5), "news");
                     break;
                 case "images":
-                    const imageData = await searchImages(args.query, {
+                    const imageData = await searchImages(typedArgs.query, {
                         safeSearch: SafeSearchType.MODERATE,
                     });
-                    results = formatResults(imageData.results.slice(0, args.limit || 5), "images");
+                    results = formatResults(imageData.results.slice(0, typedArgs.limit || 5), "images");
                     break;
                 case "videos":
-                    const videoData = await searchVideos(args.query, {
+                    const videoData = await searchVideos(typedArgs.query, {
                         safeSearch: SafeSearchType.MODERATE,
                     });
-                    results = formatResults(videoData.results.slice(0, args.limit || 5), "videos");
+                    results = formatResults(videoData.results.slice(0, typedArgs.limit || 5), "videos");
                     break;
                 default:
-                    const webData = await search(args.query, {
+                    const webData = await search(typedArgs.query, {
                         safeSearch: SafeSearchType.MODERATE,
                     });
-                    results = formatResults(webData.results.slice(0, args.limit || 5), "web");
+                    results = formatResults(webData.results.slice(0, typedArgs.limit || 5), "web");
             }
             return {
                 content: [
@@ -274,10 +280,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 moderate: SafeSearchType.MODERATE,
                 off: SafeSearchType.OFF,
             };
-            const results = await search(args.query, {
-                safeSearch: safeSearchMap[args.safeSearch || "moderate"],
+            const results = await search(typedArgs.query, {
+                safeSearch: safeSearchMap[typedArgs.safeSearch || "moderate"],
             });
-            const formatted = formatResults(results.results.slice(0, args.limit || 5), "web");
+            const formatted = formatResults(results.results.slice(0, typedArgs.limit || 5), "web");
             return {
                 content: [
                     {
@@ -289,11 +295,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         // News search
         if (name === "news_search") {
-            const results = await searchNews(args.query, {
+            const timeRangeMap = {
+                d: SearchTimeType.DAY,
+                w: SearchTimeType.WEEK,
+                m: SearchTimeType.MONTH,
+                y: SearchTimeType.YEAR,
+            };
+            const results = await searchNews(typedArgs.query, {
                 safeSearch: SafeSearchType.MODERATE,
-                time: args.timeRange || "w",
+                time: timeRangeMap[typedArgs.timeRange] || SearchTimeType.WEEK,
             });
-            const formatted = formatResults(results.results.slice(0, args.limit || 5), "news");
+            const formatted = formatResults(results.results.slice(0, typedArgs.limit || 5), "news");
             return {
                 content: [
                     {
@@ -305,12 +317,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         // Image search
         if (name === "image_search") {
-            const results = await searchImages(args.query, {
+            const results = await searchImages(typedArgs.query, {
                 safeSearch: SafeSearchType.MODERATE,
-                size: args.size,
-                type: args.type,
+                size: typedArgs.size,
+                type: typedArgs.type,
             });
-            const formatted = formatResults(results.results.slice(0, args.limit || 5), "images");
+            const formatted = formatResults(results.results.slice(0, typedArgs.limit || 5), "images");
             return {
                 content: [
                     {
@@ -322,11 +334,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         // Video search
         if (name === "video_search") {
-            const results = await searchVideos(args.query, {
+            const results = await searchVideos(typedArgs.query, {
                 safeSearch: SafeSearchType.MODERATE,
-                duration: args.duration,
+                duration: typedArgs.duration,
             });
-            const formatted = formatResults(results.results.slice(0, args.limit || 5), "videos");
+            const formatted = formatResults(results.results.slice(0, typedArgs.limit || 5), "videos");
             return {
                 content: [
                     {
@@ -339,12 +351,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`);
     }
     catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         console.error("🕊️ Freebird error:", error);
         return {
             content: [
                 {
                     type: "text",
-                    text: `Error performing search: ${error.message}\nPlease try again with different keywords.`,
+                    text: `Error performing search: ${errorMessage}\nPlease try again with different keywords.`,
                 },
             ],
         };
