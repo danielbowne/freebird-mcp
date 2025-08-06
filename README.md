@@ -79,6 +79,7 @@ use freebird to find the latest TypeScript 5.0 features and examples
 ### Available Tools
 
 - `freebird_search` - Smart search with auto-detection
+- `freebird_fetch` - Extract full page content in LLM-friendly Markdown
 - `web_search` - General web search  
 - `news_search` - Latest news articles
 - `image_search` - Image search with filters
@@ -104,6 +105,25 @@ use freebird to research microservices event-driven architecture patterns
 
 # Tool Configuration
 use freebird to find ESLint configuration for TypeScript monorepos
+
+# Full Content Extraction  
+use freebird to fetch the full FastAPI tutorial page content
+```
+
+### Content Extraction Examples
+
+```bash
+# Get complete documentation pages
+freebird_fetch: https://docs.python.org/3/library/asyncio.html
+
+# Extract API reference with code examples
+freebird_fetch: https://fastapi.tiangolo.com/tutorial/
+
+# Pull full GitHub README or wiki pages
+freebird_fetch: https://github.com/microsoft/TypeScript/blob/main/README.md
+
+# Get complete tutorial content
+freebird_fetch: https://react.dev/learn/thinking-in-react
 ```
 
 ## 🐳 Docker Support
@@ -150,6 +170,52 @@ Smart search that auto-detects the best search type based on your query.
   "region": "us-en", 
   "safeSearch": "moderate"
 }
+```
+
+### freebird_fetch
+
+Extract full page content from URLs and return clean, LLM-friendly Markdown.
+
+**Parameters:**
+- `url` (required) - URL to fetch content from
+- `maxLength` (optional) - Maximum content length (1000-50000, default: 10000)  
+- `includeImages` (optional) - Include image descriptions (default: false)
+
+**Features:**
+- Converts HTML to clean Markdown
+- Removes ads, navigation, and clutter
+- Preserves code blocks, tables, and structure  
+- Includes page metadata (title, description)
+- Respects content length limits
+
+**Example:**
+```json
+{
+  "url": "https://docs.python.org/3/library/json.html",
+  "maxLength": 15000,
+  "includeImages": false
+}
+```
+
+**Output Format:**
+```markdown
+# Page Title
+
+> Page description from meta tags
+
+**Source:** https://example.com/page
+
+---
+
+# Main Content Header
+
+Page content converted to clean Markdown with preserved:
+- **Code blocks** with syntax highlighting info
+- Tables with proper formatting
+- Lists and nested structures
+- Links and emphasis
+
+... [Content truncated if over maxLength]
 ```
 
 ## 🤝 Contributing

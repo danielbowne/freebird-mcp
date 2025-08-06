@@ -8,6 +8,13 @@ import {
 import { DDGS } from "@phukon/duckduckgo-search";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import TurndownService from "turndown";
+import * as cheerio from "cheerio";
+
+// Import turndown-plugin-gfm using dynamic import
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const turndownPluginGfm = require('turndown-plugin-gfm');
 
 // 🕊️ Freebird - Soar through the web without limits
 const BANNER = `
@@ -17,6 +24,24 @@ Free as a bird - No API keys required
 
 // Initialize DDGS instance
 const ddgs = new DDGS();
+
+// Initialize Turndown service for HTML to Markdown conversion
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+  emDelimiter: '*',
+  strongDelimiter: '**',
+  linkStyle: 'inlined'
+});
+
+// Add table support
+turndownService.use(turndownPluginGfm.tables);
+
+// Remove elements that add noise for LLMs
+turndownService.remove(['script', 'style', 'nav', 'footer', 'header', 'aside', 'noscript']);
+
+// Keep useful elements
+turndownService.keep(['code', 'pre']);
 
 // Parse CLI arguments
 const argv = await yargs(hideBin(process.argv))
@@ -86,6 +111,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["query"],
         },
       },
+      {
+        name: "freebird_fetch",
+        description:
+          '🦅 Fetch and extract full page content from URLs. Returns LLM-friendly Markdown with preserved structure, code blocks, and tables.',
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: {
+              type: "string",
+              description: "URL to fetch content from",
+              format: "uri",
+            },
+            maxLength: {
+              type: "number",
+              description: "Maximum content length in characters",
+              default: 10000,
+              minimum: 1000,
+              maximum: 50000,
+            },
+            includeImages: {
+              type: "boolean",
+              description: "Include image descriptions and alt text",
+              default: false,
+            },
+          },
+          required: ["url"],
+        },
+      },
     ],
   };
 });
@@ -149,6 +202,99 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           },
         ],
       };
+    }
+
+    // Freebird fetch - get full page content
+    if (name === "freebird_fetch") {
+      if (argv.verbose) {
+        console.error(`🦅 Freebird: Fetching content from "${typedArgs.url}"`);
+      }
+
+      try {
+        // Fetch the HTML content
+        const response = await fetch(typedArgs.url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; FreebirdMCP/1.0; +https://github.com/danielbowne/freebird-mcp)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const html = await response.text();
+        const $ = cheerio.load(html);
+
+        // Remove noise elements for cleaner content
+        $('script, style, nav, footer, header, aside, noscript, .ads, .advertisement, #ads, .sidebar').remove();
+        
+        // Remove common ad and navigation classes
+        $('.nav, .navigation, .menu, .breadcrumb, .social, .share, .comments').remove();
+        $('.cookie-banner, .popup, .modal, .overlay').remove();
+
+        // Focus on main content areas
+        let contentElement = $('main, article, .content, .post, .entry, #content, .main').first();
+        if (contentElement.length === 0) {
+          // Fallback to body if no main content area found
+          contentElement = $('body');
+        }
+
+        // Extract the cleaned HTML
+        const cleanedHtml = contentElement.html() || '';
+        
+        if (!cleanedHtml) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "🦅 Unable to extract content from the page. The page might be JavaScript-heavy or have unusual structure.",
+              },
+            ],
+          };
+        }
+
+        // Convert to Markdown
+        let markdown = turndownService.turndown(cleanedHtml);
+        
+        // Apply length limit
+        const maxLength = typedArgs.maxLength || 10000;
+        if (markdown.length > maxLength) {
+          markdown = markdown.substring(0, maxLength) + '\n\n... [Content truncated]';
+        }
+
+        // Add metadata
+        const title = $('title').text().trim();
+        const description = $('meta[name="description"]').attr('content') || '';
+        
+        let result = `# ${title || 'Page Content'}\n\n`;
+        if (description) {
+          result += `> ${description}\n\n`;
+        }
+        result += `**Source:** ${typedArgs.url}\n\n`;
+        result += `---\n\n${markdown}`;
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: result,
+            },
+          ],
+        };
+
+      } catch (fetchError) {
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error occurred';
+        return {
+          content: [
+            {
+              type: "text",
+              text: `🦅 Error fetching content from ${typedArgs.url}:\n${errorMessage}\n\nThis could be due to:\n- Network issues\n- Site blocking automated requests\n- Invalid URL\n- Content behind authentication`,
+            },
+          ],
+        };
+      }
     }
 
     throw new Error(`Unknown tool: ${name}`);
