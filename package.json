@@ -1,0 +1,54 @@
+{
+    "name": "@dannyboy2042/freebird-mcp",
+    "version": "1.0.0-beta.1",
+    "description": "🕊️ Free web search MCP server - soar through the web without API keys. Just add 'use freebird' to any prompt.",
+    "main": "dist/index.js",
+    "bin": {
+        "freebird-mcp": "./dist/index.js"
+    },
+    "type": "module",
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsx src/index.ts",
+        "test": "tsx src/index.ts --transport stdio",
+        "prepublishOnly": "npm run build"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.6.0",
+        "duck-duck-scrape": "^2.2.5",
+        "yargs": "^17.7.2"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/yargs": "^17.0.0",
+        "tsx": "^4.0.0",
+        "typescript": "^5.0.0"
+    },
+    "keywords": [
+        "mcp",
+        "mcp-server",
+        "search",
+        "duckduckgo",
+        "freebird",
+        "free",
+        "no-api-key",
+        "web-search",
+        "scraping"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/danielbowne/freebird-mcp.git"
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}
