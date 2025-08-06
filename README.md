@@ -335,7 +335,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [duck-duck-scrape](https://github.com/phukon/duck-duck-scrape) by @phukon
+- Built with [@phukon/duckduckgo-search](https://github.com/phukon/duckduckgo-search) by [@phukon](https://github.com/phukon)
 - Powered by the [Model Context Protocol](https://modelcontextprotocol.io)
 - Inspired by the need for free, unlimited web search
 
