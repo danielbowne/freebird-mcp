@@ -19,13 +19,8 @@ Free web search for AI assistants. No API keys. No limits. Just soar.
 <details>
 <summary><b>Install in Claude Desktop</b></summary>
 
-**Docker (Recommended):**
+**Quick Install:**
 ```bash
-claude mcp add freebird -- docker run -i --rm dannyboy2042/freebird-mcp
-```
-
-**NPM:**
-```bash  
 claude mcp add freebird -- npx -y @dannyboy2042/freebird-mcp
 ```
 
@@ -34,8 +29,8 @@ claude mcp add freebird -- npx -y @dannyboy2042/freebird-mcp
 {
   "mcpServers": {
     "freebird": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "dannyboy2042/freebird-mcp"]
+      "command": "npx",
+      "args": ["-y", "@dannyboy2042/freebird-mcp"]
     }
   }
 }
@@ -60,13 +55,13 @@ Add to your Cursor MCP settings file (`~/.cursor-mcp/settings.json`):
 }
 ```
 
-**Docker version:**
+**Alternative with specific version:**
 ```json
 {
   "mcpServers": {
     "freebird": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "dannyboy2042/freebird-mcp"],
+      "command": "npx",
+      "args": ["-y", "@dannyboy2042/freebird-mcp@latest"],
       "env": {}
     }
   }
@@ -92,13 +87,13 @@ Configure in Windsurf MCP settings:
 }
 ```
 
-**For Docker:**
+**Alternative naming:**
 ```json
 {
   "mcpServers": {
-    "freebird-search": {
-      "command": "docker", 
-      "args": ["run", "-i", "--rm", "dannyboy2042/freebird-mcp"],
+    "freebird": {
+      "command": "npx", 
+      "args": ["@dannyboy2042/freebird-mcp"],
       "disabled": false
     }
   }
@@ -232,20 +227,22 @@ freebird_fetch: https://github.com/microsoft/TypeScript/blob/main/README.md
 freebird_fetch: https://react.dev/learn/thinking-in-react
 ```
 
-## 🐳 Docker Support
+## 🧪 Testing
 
-The Docker image is available at `dannyboy2042/freebird-mcp`:
+Test the MCP server locally:
 
 ```bash
-# Pull the image
-docker pull dannyboy2042/freebird-mcp
-
-# Run directly
-docker run -i --rm dannyboy2042/freebird-mcp
-
-# Test with a search
+# Test tool listing
 echo '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}' | \
-docker run -i --rm dannyboy2042/freebird-mcp
+npx @dannyboy2042/freebird-mcp
+
+# Test search functionality
+echo '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "freebird_search", "arguments": {"query": "Node.js tutorials", "limit": 3}}, "id": 2}' | \
+npx @dannyboy2042/freebird-mcp
+
+# Test content fetching
+echo '{"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "freebird_fetch", "arguments": {"url": "https://httpbin.org/html", "maxLength": 1000}}, "id": 3}' | \
+npx @dannyboy2042/freebird-mcp
 ```
 
 ## 🔧 Configuration
