@@ -336,6 +336,9 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 ## 🙏 Acknowledgments
 
 - Built with [@phukon/duckduckgo-search](https://github.com/phukon/duckduckgo-search) by [@phukon](https://github.com/phukon)
+- HTML to Markdown conversion powered by [turndown](https://github.com/mixmark-io/turndown) and [turndown-plugin-gfm](https://github.com/mixmark-io/turndown-plugin-gfm)
+- HTML parsing with [cheerio](https://github.com/cheeriojs/cheerio)
+- CLI interface built with [yargs](https://github.com/yargs/yargs)
 - Powered by the [Model Context Protocol](https://modelcontextprotocol.io)
 - Inspired by the need for free, unlimited web search
 
